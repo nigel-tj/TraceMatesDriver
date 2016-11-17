@@ -32,6 +32,7 @@ import com.codename1.ui.layouts.BoxLayout;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,6 +52,7 @@ public class TraceMatesDriver {
     private TextField trackingIdTextFld;
     private Boolean tracking = false;
     private String trackingId = "";
+    private  HashMap<String, String> driverDetails = null;
     public void init(Object context) {
         theme = UIManager.initFirstTheme("/theme");
 
@@ -59,82 +61,12 @@ public class TraceMatesDriver {
 
         // Pro only feature, uncomment if you have a pro subscription
         // Log.bindCrashProtection(true);
-    }
-
-    public void start() {
-        if (current != null) {
-            current.show();
-            return;
-        }
-
-
-
-
-        //create and build the home Form
-        home = new Form("TraceMates");
-        home.setLayout(new BoxLayout(BoxLayout.Y_AXIS));
-        trackingIdTextFld = new TextField();
-        trackingIdTextFld.setHint("Tracking ID");
-        home.addComponent(trackingIdTextFld);
-        Button start = new Button("Start Tracking");
-
-        InteractionDialog dialog = new InteractionDialog("Start Tracking");
-        dialog.setLayout(new BorderLayout());
-        dialog.add(BorderLayout.CENTER, new Label("Starting tracking for parcel xyz"));
-        Button ok = new Button("Ok");
-        ok.addActionListener((ee) -> dialog.dispose());
-        Button close = new Button("Cancel");
-        close.addActionListener((ee) -> dialog.dispose());
-        dialog.addComponent(BorderLayout.EAST, close);
-        dialog.addComponent(BorderLayout.WEST, ok);
-        Dimension pre = dialog.getContentPane().getPreferredSize();
-
-
-
-
-
-        start.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-
-                Dialog.show("Start Tracking", "Tracking parcel xyz", "Ok", "Cancel");
-                //dialog.show(0, 0, Display.getInstance().getDisplayWidth() - (pre.getWidth() + pre.getWidth() / 6), 0);
-                trackingId = trackingIdTextFld.getText();
-                tracking = true;
-                tracker();
-
-            }
-        });
-        home.addComponent(start);
-        Button stop = new Button("Stop Tracking");
-        stop.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-
-                Dialog.show("Stop Tracking", "Parcel xyz", "Ok", "Cancel");
-                tracking = false;
-                tracker();
-            }
-        });
-        home.addComponent(stop);
-
-        Button b1 = new Button("Show a Dialog");
-        b1.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                Dialog.show("Dialog Title", "Dialog Body", "Ok", "Cancel");
-            }
-        });
-        //home.addComponent(b1);
 
         //Create Form1 and Form2 and set a Back Command to navigate back to the home Form
-        Form form1 = new Form("Form1");
-        setBackCommand(form1);
-        Form form2 = new Form("Form2");
-        setBackCommand(form2);
+        Form listParcels = listParcels();
+        setBackCommand(listParcels);
+        //Form form2 = new Form("Form2");
+        //setBackCommand(form2);
 
         //Add navigation commands to the home Form
         //NavigationCommand homeCommand = new NavigationCommand("Home");
@@ -149,8 +81,15 @@ public class TraceMatesDriver {
         //      cmd2.setNextForm(form2);
         //    home.getToolbar().addCommandToSideMenu(cmd2);
 
+    }
 
-        home.show();
+    public void start() {
+        if (current != null) {
+            current.show();
+            return;
+        }
+
+        login();
     }
 
     protected void setBackCommand(Form f) {
@@ -175,6 +114,68 @@ public class TraceMatesDriver {
     public void destroy() {
     }
 
+    public void trackParcel() {
+        //create and build the home Form
+        home = new Form("TraceMates");
+        home.setLayout(new BoxLayout(BoxLayout.Y_AXIS));
+        trackingIdTextFld = new TextField();
+        trackingIdTextFld.setHint("Tracking ID");
+        home.addComponent(trackingIdTextFld);
+        Button start = new Button("Start Tracking");
+
+        InteractionDialog dialog = new InteractionDialog("Start Tracking");
+        dialog.setLayout(new BorderLayout());
+        dialog.add(BorderLayout.CENTER, new Label("Starting tracking for parcel xyz"));
+        Button ok = new Button("Ok");
+        ok.addActionListener((ee) -> dialog.dispose());
+        Button close = new Button("Cancel");
+        close.addActionListener((ee) -> dialog.dispose());
+        dialog.addComponent(BorderLayout.EAST, close);
+        dialog.addComponent(BorderLayout.WEST, ok);
+        Dimension pre = dialog.getContentPane().getPreferredSize();
+
+        start.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+
+                Dialog.show("Start Tracking", "Tracking parcel xyz", "Ok", "Cancel");
+                //dialog.show(0, 0, Display.getInstance().getDisplayWidth() - (pre.getWidth() + pre.getWidth() / 6), 0);
+                trackingId = trackingIdTextFld.getText();
+                tracking = true;
+                tracker();
+
+            }
+        });
+
+        home.addComponent(start);
+        Button stop = new Button("Stop Tracking");
+        stop.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+
+                Dialog.show("Stop Tracking", "Parcel xyz", "Ok", "Cancel");
+                tracking = false;
+                tracker();
+            }
+        });
+        home.addComponent(stop);
+
+        Button b1 = new Button("Show a Dialog");
+        b1.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                Dialog.show("Dialog Title", "Dialog Body", "Ok", "Cancel");
+            }
+        });
+        //home.addComponent(b1);
+
+        current = home;
+        start();
+    }
+
     private void tracker(){
         while (tracking) {
             try {
@@ -190,7 +191,7 @@ public class TraceMatesDriver {
                 request.setContentType("application/x-www-form-urlencoded");
                 request.addRequestHeader("Connection", "Keep-Alive");
                 request.addArgument("function", "add_tracker_location");
-                request.addArgument("tracker_id", "tracker_id1");
+                request.addArgument("tracker_id", trackingId);
                 request.addArgument("longitude", longtitude);
                 request.addArgument("latitude", latitude);
 
@@ -214,5 +215,73 @@ public class TraceMatesDriver {
 
     //private void startTracking(){}
 
+    private void login(){
+        home = new Form("");
+        home.setLayout(new BoxLayout(BoxLayout.Y_AXIS));
+        TextField email = new TextField();
+        email.setHint("email");
+        TextField password = new TextField();
+        password.setHint("password");
+        Button submit = new Button("Login");
+        submit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                //Dialog.show("Dialog Title", "Dialog Body", "Ok", "Cancel");
+                request = new ConnectionRequest();
+
+
+                //Dialog.show("Foodmates Error", myrole, "Proceed", null);
+                request.setUrl(fmURL);
+                request.setPost(true);
+                request.setHttpMethod("POST");
+                request.setContentType("application/x-www-form-urlencoded");
+                request.addRequestHeader("Connection","Keep-Alive");
+                request.addArgument("function", "authenticate_driver");
+                request.addArgument("email", email.getText());
+
+                Map<String, Object> response = traceMatesAPI(request);
+                if(response != null){
+                    driverDetails = (HashMap<String, String>) response.get("data");
+                    Log.p((String) driverDetails.toString());
+                    trackingId = driverDetails.get("driverId");
+                    trackParcel();
+                }
+
+            }
+        });
+        home.addComponent(email);
+        home.addComponent(password);
+        home.addComponent(submit);
+        current = home;
+        start();
+    }
+
+    private Form listParcels(){
+        return new Form("Parcels");
+    }
+
+    private  Map<String,Object> traceMatesAPI(ConnectionRequest request){
+
+        Log.p(request.getUrl());
+        Map<String, Object> result = null;
+
+        try {
+            NetworkManager.getInstance().addToQueueAndWait(request);
+            JSONParser p = new JSONParser();
+            result = p.parseJSON(new InputStreamReader(new ByteArrayInputStream(request.getResponseData())));
+            Log.p("after parsing");
+            Log.p((String) result.get("success"));
+
+            if (result.get("success").toString().equalsIgnoreCase("true")) {
+                Log.p("response: " + result.toString());
+                return result;
+
+            }
+        }catch (IOException ioExeption){
+                Dialog.show("Tracemates Error", String.valueOf(ioExeption), "Proceed", null);
+        }
+
+        return result;
+    }
 
 }
