@@ -231,7 +231,7 @@ public class TraceMatesDriver {
                     driverDetails = (HashMap<String, String>) response.get("data");
                     Log.p((String) driverDetails.toString());
                     trackingId = driverDetails.get("driverId");
-                    trackParcel();
+                    listParcels();
                 }
 
             }
@@ -244,11 +244,11 @@ public class TraceMatesDriver {
     }
 
     private void listParcels(){
-        java.util.List parcels = allParcelsAssignedToDriver();
+        ArrayList parcels = allParcelsAssignedToDriver();
         home = new Form("Parcels");
         Container list = new Container(BoxLayout.y());
         list.setScrollableY(true);
-        for(Object parcel : parcels) {
+        for(Map parcel : (ArrayList<Map>) parcels) {
 
             String name = (String)parcel.get("name");
             Button b = new Button(name);
@@ -284,8 +284,8 @@ public class TraceMatesDriver {
         return result;
     }
 
-    private java.util.List<Object> allParcelsAssignedToDriver(){
-        java.util.List parcels = null;
+    private ArrayList allParcelsAssignedToDriver(){
+        ArrayList parcels = null;
         request = new ConnectionRequest();
         request.setUrl(fmURL);
         request.setPost(true);
@@ -297,7 +297,7 @@ public class TraceMatesDriver {
 
         Map<String, Object> response = traceMatesAPI(request);
         if(response != null){
-            parcels = (java.util.List)response.get("data");
+            parcels = (ArrayList) response.get("data");
             //List<Object> parcelHashes = Arrays.asList(parcels);
             return parcels;
             //Log.p((String) parcels.toString());
