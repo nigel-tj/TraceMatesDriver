@@ -8,7 +8,6 @@ import com.codename1.io.NetworkManager;
 import com.codename1.location.Location;
 import com.codename1.location.LocationManager;
 import com.codename1.ui.*;
-import com.codename1.ui.List;
 import com.codename1.ui.geom.Dimension;
 import com.codename1.ui.layouts.BorderLayout;
 import com.codename1.ui.plaf.UIManager;
@@ -16,7 +15,6 @@ import com.codename1.ui.util.Resources;
 import com.codename1.ui.events.ActionEvent;
 import com.codename1.ui.events.ActionListener;
 import com.codename1.ui.layouts.BoxLayout;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,11 +33,11 @@ public class TraceMatesDriver {
     ConnectionRequest request = null;
     Location  position = null;
 
-    private String fmURL = "http://tracemates.foodmates.co.za/services/rest/v1/tracemates.php";
-    private TextField trackingIdTextFld;
+    private String apiURL = "http://tracemates.foodmates.co.za/services/rest/v1/tracemates.php";
     private Boolean tracking = false;
     private String trackingId = "";
     private  HashMap<String, String> driverDetails = null;
+
     public void init(Object context) {
         theme = UIManager.initFirstTheme("/theme");
 
@@ -75,7 +73,6 @@ public class TraceMatesDriver {
             current.show();
             return;
         }
-
         login();
     }
 
@@ -101,13 +98,38 @@ public class TraceMatesDriver {
     public void destroy() {
     }
 
-    public void trackParcel() {
+    public void trackParcel(Map parcel) {
         //create and build the home Form
+        trackingId = (String)parcel.get("trackingNumber");
         home = new Form("TraceMates");
         home.setLayout(new BoxLayout(BoxLayout.Y_AXIS));
-        trackingIdTextFld = new TextField();
-        trackingIdTextFld.setHint("Tracking ID");
-        home.addComponent(trackingIdTextFld);
+        Container parcelInfo = new Container(new BoxLayout(BoxLayout.Y_AXIS));
+        Label parcelName = new Label((String) parcel.get("name"));
+        Label parcelDetails = new Label((String) parcel.get("parcelDetails"));
+        Label creationTime = new Label((String) parcel.get("creationTime"));
+        Label trackingNumber = new Label((String) parcel.get("trackingNumber"));
+        Label address = new Label((String) parcel.get("address"));
+        Label city = new Label((String) parcel.get("city"));
+        Label province = new Label((String) parcel.get("province"));
+        Label postalCode = new Label((String) parcel.get("postalCode"));
+        Label deliveredFlag = new Label();
+        Label customerDetails = new Label("Test customer");
+        parcelInfo.addComponent(customerDetails);
+        parcelInfo.addComponent(creationTime);
+        parcelInfo.addComponent(parcelName);
+        parcelInfo.addComponent(parcelDetails);
+        parcelInfo.addComponent(trackingNumber);
+        parcelInfo.addComponent(address);
+        parcelInfo.addComponent(city);
+        parcelInfo.addComponent(province);
+        parcelInfo.addComponent(postalCode);
+        if(parcel.get("deliveredFlag").equals("t")){
+            deliveredFlag.setText("delivered");
+        }else{
+            deliveredFlag.setText("pending");
+        }
+        parcelInfo.addComponent(deliveredFlag);
+        home.addComponent(parcelInfo);
         Button start = new Button("Start Tracking");
 
         InteractionDialog dialog = new InteractionDialog("Start Tracking");
@@ -128,7 +150,7 @@ public class TraceMatesDriver {
 
                 Dialog.show("Start Tracking", "Tracking parcel xyz", "Ok", "Cancel");
                 //dialog.show(0, 0, Display.getInstance().getDisplayWidth() - (pre.getWidth() + pre.getWidth() / 6), 0);
-                trackingId = trackingIdTextFld.getText();
+                //trackingId = trackingIdTextFld.getText();
                 tracking = true;
                 tracker();
 
@@ -141,24 +163,12 @@ public class TraceMatesDriver {
 
             @Override
             public void actionPerformed(ActionEvent evt) {
-
                 Dialog.show("Stop Tracking", "Parcel xyz", "Ok", "Cancel");
                 tracking = false;
                 tracker();
             }
         });
         home.addComponent(stop);
-
-        Button b1 = new Button("Show a Dialog");
-        b1.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                Dialog.show("Dialog Title", "Dialog Body", "Ok", "Cancel");
-            }
-        });
-        //home.addComponent(b1);
-
         current = home;
         start();
     }
@@ -168,18 +178,17 @@ public class TraceMatesDriver {
             try {
                 request = new ConnectionRequest();
                 position = LocationManager.getLocationManager().getCurrentLocation();
-                String longtitude = Double.toString(position.getLongitude());
+                String longitude = Double.toString(position.getLongitude());
                 String latitude = Double.toString(position.getLatitude());
-                trackingId = trackingIdTextFld.getText();
 
-                request.setUrl(fmURL);
+                request.setUrl(apiURL);
                 request.setPost(false);
                 request.setHttpMethod("POST");
                 request.setContentType("application/x-www-form-urlencoded");
                 request.addRequestHeader("Connection", "Keep-Alive");
                 request.addArgument("function", "add_tracker_location");
                 request.addArgument("tracker_id", trackingId);
-                request.addArgument("longitude", longtitude);
+                request.addArgument("longitude", longitude);
                 request.addArgument("latitude", latitude);
 
                 Log.p(request.getUrl());
@@ -189,7 +198,7 @@ public class TraceMatesDriver {
                 Map<String, Object> result = p.parseJSON(new InputStreamReader(new ByteArrayInputStream(request.getResponseData())));
                 Thread.sleep(15000);
                 Log.p("tracking code= " + trackingId);
-                Log.p("longitude= " + longtitude);
+                Log.p("longitude= " + longitude);
                 Log.p("latitude= " + latitude);
                 Log.p(result.toString());
             } catch (IOException e) {
@@ -199,8 +208,6 @@ public class TraceMatesDriver {
             }
         }
     }
-
-    //private void startTracking(){}
 
     private void login(){
         home = new Form("");
@@ -218,7 +225,7 @@ public class TraceMatesDriver {
 
 
                 //Dialog.show("Foodmates Error", myrole, "Proceed", null);
-                request.setUrl(fmURL);
+                request.setUrl(apiURL);
                 request.setPost(true);
                 request.setHttpMethod("POST");
                 request.setContentType("application/x-www-form-urlencoded");
@@ -227,13 +234,16 @@ public class TraceMatesDriver {
                 request.addArgument("email", email.getText());
 
                 Map<String, Object> response = traceMatesAPI(request);
-                if(response != null){
+                Log.p((String) response.toString());
+                if(response.get("success").equals("false")){
+                    Dialog.show("Tracemates Error", "wrong email/password combination", "Ok", null);
+                }
+                if(response != null && response.get("success").equals("true")){
                     driverDetails = (HashMap<String, String>) response.get("data");
                     Log.p((String) driverDetails.toString());
                     trackingId = driverDetails.get("driverId");
                     listParcels();
                 }
-
             }
         });
         home.addComponent(email);
@@ -246,14 +256,15 @@ public class TraceMatesDriver {
     private void listParcels(){
         ArrayList parcels = allParcelsAssignedToDriver();
         home = new Form("Parcels");
-        Container list = new Container(BoxLayout.y());
+        home.setLayout(new BoxLayout(BoxLayout.Y_AXIS));
+        Container list = new Container(new BoxLayout(BoxLayout.Y_AXIS));
         list.setScrollableY(true);
         for(Map parcel : (ArrayList<Map>) parcels) {
 
             String name = (String)parcel.get("name");
             Button b = new Button(name);
             list.add(b);
-            b.addActionListener(e -> Log.p("You picked: " + b.getText()));
+            b.addActionListener(e -> trackParcel(parcel));
         }
         home.addComponent(list);
         current = home;
@@ -287,7 +298,7 @@ public class TraceMatesDriver {
     private ArrayList allParcelsAssignedToDriver(){
         ArrayList parcels = null;
         request = new ConnectionRequest();
-        request.setUrl(fmURL);
+        request.setUrl(apiURL);
         request.setPost(true);
         request.setHttpMethod("POST");
         request.setContentType("application/x-www-form-urlencoded");
